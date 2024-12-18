@@ -16,6 +16,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilders;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.neo4j.io.fs.FileUtils;
@@ -27,7 +28,9 @@ import static org.testng.AssertJUnit.assertEquals;
 
 public class PersonServiceTest {
     private Driver driver;
-    Path testdatabaseDir = Paths.get("target/neo4j-embedded-db");
+
+    Neo4j embeddedDatabaseServer;
+    Path testdatabaseDir = Paths.get("target/neo4jTest-embedded-db");
 
 
     @BeforeClass
@@ -39,12 +42,22 @@ public class PersonServiceTest {
                 throw new RuntimeException("Failed to clear database directory", e);
             }
         }
-        Neo4j embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
+         embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
                 .withDisabledServer()
                 .withProcedure(PersonService.class).withWorkingDir(testdatabaseDir)
                 .build();
 
         this.driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI());
+    }
+
+    @AfterClass
+    public void cleanup() {
+        try {
+            embeddedDatabaseServer.close();
+            FileUtils.deleteDirectory(testdatabaseDir.toFile().toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete database directory after test", e);
+        }
     }
     
     
